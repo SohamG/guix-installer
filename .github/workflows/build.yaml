@@ -70,6 +70,8 @@ jobs:
           export RELEASE_TAG=$(date +"%Y%m%d%H%M")
           echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
           cp $image ./guix-installer-$RELEASE_TAG.iso
+          tar czvf guix-installer-$RELEASE_TAG.tar.gz ./guix-installer-$RELEASE_TAG.iso
+          split -b 2GiB ./guix-installer-$RELEASE_TAG.tar.gz "guix-installer-$RELEASE_TAG.tar.gz-part-"
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -88,7 +90,7 @@ jobs:
           name: Guix Installer - ${{ env.RELEASE_TAG }}
           tag_name: v${{ env.RELEASE_TAG }}
           body_path: release-notes.md
-          files: guix-installer-${{ env.RELEASE_TAG }}.iso
+          files: guix-installer-${{ env.RELEASE_TAG }}.tar.gz-part-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: SystemCrafters/guix-installer
