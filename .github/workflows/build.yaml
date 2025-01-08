@@ -70,8 +70,17 @@ jobs:
           export RELEASE_TAG=$(date +"%Y%m%d%H%M")
           echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
           cp $image ./guix-installer-$RELEASE_TAG.iso
+          # Compress image in tar achirve
           tar czvf guix-installer-$RELEASE_TAG.tar.gz ./guix-installer-$RELEASE_TAG.iso
-          split -b 2GiB ./guix-installer-$RELEASE_TAG.tar.gz "guix-installer-$RELEASE_TAG.tar.gz-part-"
+          # Github limits single files to 2GiB in releases.
+          IMAGE_SIZE=$(stat -c %s ./guix-installer-$RELEASE_TAG.tar.gz)
+          mkdir -p to-release
+          if test "$IMAGE_SIZE" -lt "2000000000"; then 
+            split -b 2GiB ./guix-installer-$RELEASE_TAG.tar.gz "guix-installer-$RELEASE_TAG.tar.gz-part-"
+            mv guix-installer-$RELEASE_TAG.tar.gz-part-* to-release/
+          else
+            mv ./guix-installer-$RELEASE_TAG.tar.gz to-release/
+          fi
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -90,7 +99,7 @@ jobs:
           name: Guix Installer - ${{ env.RELEASE_TAG }}
           tag_name: v${{ env.RELEASE_TAG }}
           body_path: release-notes.md
-          files: guix-installer-${{ env.RELEASE_TAG }}.tar.gz-part-*
+          files: to-release/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: SystemCrafters/guix-installer
+          GITHUB_REPOSITORY: SohamG/guix-installer
